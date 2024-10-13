@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ArqitekLauncher": {
+      "commandName": "Project",
+      "commandLineArgs": "vercheck"
+    }
+  }
+}

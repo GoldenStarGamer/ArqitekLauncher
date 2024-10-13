@@ -4,5 +4,6 @@ namespace ArqitekLauncher.ViewModels
 {
     public class ViewModelBase : ObservableObject
     {
+
     }
 }

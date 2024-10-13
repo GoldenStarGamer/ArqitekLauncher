@@ -1,7 +1,7 @@
-using System;
 using ArqitekLauncher.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using System;
 
 namespace ArqitekLauncher
 {
