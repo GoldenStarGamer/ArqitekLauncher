@@ -3,6 +3,10 @@
     "ArqitekLauncher": {
       "commandName": "Project",
       "commandLineArgs": "vercheck"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
     }
   }
 }

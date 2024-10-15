@@ -109,7 +109,7 @@ namespace ArqitekLauncher.Views
 
             if (installtable.ContainsKey((int)Games.pbb))
             {
-                var version = Path.Combine(installtable[(int)Games.pbb], @"ProjectBadBot\version.txt");
+                var version = Path.Combine(installtable[(int)Games.pbb], @"ProjectBadBot\version.txt".Replace('\\', Path.DirectorySeparatorChar));
 
                 if (File.Exists(version))
                 {
@@ -178,6 +178,8 @@ namespace ArqitekLauncher.Views
         {
             var appdata = GetAppDataPath();
             string apath;
+            string pathsfile;
+
             if (path.StartsWith("file:///"))
             {
                 apath = path.Substring(8);  // Remove "file:///"
@@ -187,11 +189,14 @@ namespace ArqitekLauncher.Views
             {
                 apath = path;
             }
-            if (!File.Exists(Path.Combine(appdata, @"DATA\Paths")))
+
+            pathsfile = Path.Combine(appdata, @"DATA\Paths".Replace('\\', Path.DirectorySeparatorChar));
+
+            if (!File.Exists(pathsfile))
             {
                 throw new Exception("NO PATHS FILE");
             }
-            var fs = File.OpenWrite(Path.Combine(appdata, @"DATA\Paths"));
+            var fs = File.OpenWrite(pathsfile);
             await JsonSerializer.SerializeAsync(fs, new Dictionary<int, string>([new((int)Games.pbb, apath)]));
             fs.Close();
 
