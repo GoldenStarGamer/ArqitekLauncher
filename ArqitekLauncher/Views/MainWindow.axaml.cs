@@ -422,6 +422,19 @@ namespace ArqitekLauncher.Views
 				sudo($"\"chmod +x '{Path.Combine(installpath, executableName)}' && '{Path.Combine(installpath, executableName)}'\"");
 			}
 
+			else
+			{
+                ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(installpath, executableName))
+                {
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                Process process = Process.Start(psi) ?? throw new Exception();
+                process.WaitForExit();
+            }
+
 			Task.Run(() =>
 			{
 				Dispatcher.UIThread.InvokeAsync(() =>
