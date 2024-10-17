@@ -344,21 +344,21 @@ namespace ArqitekLauncher.Views
 
 			progressWindow.Closed -= ProgressBai;
 
-            var check = checkinstall();
+			var check = checkinstall();
 
-            string text = "";
+			string text = "";
 
-            switch (check)
-            {
-                case Installed.Installed: { text = "Play"; break; }
-                case Installed.Nonexistent: { text = "Install"; break; }
-                case Installed.Outdated: { text = "Update"; break; }
-                default: break;
-            }
-
-            Dispatcher.UIThread.Post(() =>
+			switch (check)
 			{
-                playtext.Text = text; // Update the UI after closing
+				case Installed.Installed: { text = "Play"; break; }
+				case Installed.Nonexistent: { text = "Install"; break; }
+				case Installed.Outdated: { text = "Update"; break; }
+				default: break;
+			}
+
+			Dispatcher.UIThread.Post(() =>
+			{
+				playtext.Text = text; // Update the UI after closing
 				progressWindow.Close();
 			});
 
@@ -410,52 +410,42 @@ namespace ArqitekLauncher.Views
 			{
 				if(IsLinuxArm64())
 				{
-					executableName += "-Arm64";
+					installpath = Path.Combine(installpath, "ProjectBadBot/Binaries/LinuxArm64/");
+					executableName = "ProjectBadBot-LinuxArm64-Shipping";
+				}
+				else
+				{
+					installpath = Path.Combine(installpath, "ProjectBadBot/Binaries/Linux/");
+					executableName = "ProjectBadBot-Linux-Shipping";
 				}
 
-				executableName += ".sh";
-            }
-
-			if (OperatingSystem.IsLinux())
-			{
-				// Ensure the game executable has executable permissions
-				sudo($"\"chmod +x '{Path.Combine(installpath, executableName)}' && '{Path.Combine(installpath, executableName)}'\"");
+				ProcessStartInfo chmod = new ProcessStartInfo("chmod")
+				{
+					Arguments = $"+x \"{Path.Combine(installpath, executableName)}\"",
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				};
+				Process proca = Process.Start(chmod) ?? throw new Exception();
+				proca.WaitForExit();
 			}
 
-			else
+			ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(installpath, executableName))
 			{
-                ProcessStartInfo psi = new ProcessStartInfo(Path.Combine(installpath, executableName))
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
-                Process process = Process.Start(psi) ?? throw new Exception();
-                process.WaitForExit();
-            }
-
-			Task.Run(() =>
-			{
-				Dispatcher.UIThread.InvokeAsync(() =>
-				{
-					WindowState = WindowState.Normal;
-					Activate();
-				});
-			});
-		}
-        public static void sudo(string command)
-        {
-            ProcessStartInfo psi = new ProcessStartInfo("pkexec")
-            {
-                Arguments = command,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true
+			};
 
 			Process process = Process.Start(psi) ?? throw new Exception();
-            process.WaitForExit();
-        }
-    }
+			process.WaitForExit();
+
+
+			Dispatcher.UIThread.Post(() =>
+			{
+				WindowState = WindowState.Normal;
+				Activate();
+			});
+		}
+	}
 }
