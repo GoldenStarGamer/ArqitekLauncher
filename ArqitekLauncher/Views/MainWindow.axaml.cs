@@ -291,49 +291,40 @@ namespace ArqitekLauncher.Views
 				using (var archive = ArchiveFactory.Open(zipPath))
 				{
 					// Find the correct folder prefix to extract (either Windows, Linux, or LinuxArm64)
-					var folderPrefix = archive.Entries
-						.Select(entry => entry.Key!.Split('/').FirstOrDefault())
-						.FirstOrDefault(prefix => prefix == "Windows" || prefix == "Linux" || prefix == "LinuxArm64");
+					// Calculate total size of the files to be extracted
+					long totalExtractSize = archive.TotalUncompressSize;
 
-					if (!string.IsNullOrEmpty(folderPrefix))
+					long totalExtractedBytes = 0;
+
+					if (targetPath.StartsWith("file:///"))
 					{
-						// Calculate total size of the files to be extracted
-						long totalExtractSize = archive.Entries
-							.Where(entry => !entry.IsDirectory && entry.Key!.StartsWith($"{folderPrefix}/"))
-							.Sum(entry => entry.Size);
+						targetPath = targetPath.Substring(OperatingSystem.IsWindows() ? 8 : 7);  // Remove "file:///"
+						targetPath = targetPath.Replace('/', Path.DirectorySeparatorChar); // Normalize slashes
+					}
 
-						long totalExtractedBytes = 0;
+					foreach (var entry in archive.Entries)
+					{
+						if (cancel.IsCancellationRequested) { archive.Dispose(); File.Delete(zipPath); return; }
 
-						if (targetPath.StartsWith("file:///"))
-						{
-							targetPath = targetPath.Substring(OperatingSystem.IsWindows() ? 8 : 7);  // Remove "file:///"
-							targetPath = targetPath.Replace('/', Path.DirectorySeparatorChar); // Normalize slashes
-						}
+						// Keep the full path, preserving the original folder structure
+						string relativePath = entry.Key.Replace("/", Path.DirectorySeparatorChar.ToString());
 
-						foreach (var entry in archive.Entries.Where(entry => !entry.IsDirectory && entry.Key!.StartsWith($"{folderPrefix}/")))
-						{
-							if (cancel.IsCancellationRequested) { archive.Dispose(); File.Delete(zipPath); return; };
+						// Build the destination path with the original folder structure
+						string destinationPath = Path.Combine(targetPath, relativePath);
 
-							// Ensure the correct relative path is extracted by removing the folder prefix
-							string relativePath = entry.Key!.Substring(entry.Key.IndexOf('/') + 1);
+						if (string.IsNullOrWhiteSpace(relativePath) || entry.IsDirectory) continue; // Skip if it's a folder
 
-							// Ensure the destinationPath is constructed correctly with proper slashes
-							string destinationPath = Path.Combine(targetPath, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+						// Create the directory structure if it doesn't exist
+						Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
 
-							if (string.IsNullOrWhiteSpace(relativePath)) continue; // Skip if it's just the folder
+						// Extract the file
+						entry.WriteToFile(destinationPath, new ExtractionOptions { Overwrite = true });
 
-							// Create directory if it doesn't exist
-							Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+						totalExtractedBytes += entry.Size;
 
-							// Extract the file
-							entry.WriteToFile(destinationPath, new ExtractionOptions { Overwrite = true });
-
-							totalExtractedBytes += entry.Size;
-
-							// Update the progress bar with extraction progress
-							var extractionProgressPercentage = (int)((totalExtractedBytes * 100) / totalExtractSize);
-							Dispatcher.UIThread.Post(() => progressWindow.UpdateProgress(extractionProgressPercentage));
-						}
+						// Update progress based on extracted size
+						double extractionProgressPercentage = (totalExtractedBytes * 100f) / totalExtractSize;
+						Dispatcher.UIThread.Post(() => progressWindow.UpdateProgress(extractionProgressPercentage));
 					}
 				}
 			}
@@ -361,8 +352,6 @@ namespace ArqitekLauncher.Views
 				playtext.Text = text; // Update the UI after closing
 				progressWindow.Close();
 			});
-
-			installed = Installed.Installed;
 
 		}
 
